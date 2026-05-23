@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from api_client import get_project, get_project_data, get_scores, list_hackathons, list_projects
+from api_client import get_leaderboard, get_project, get_project_data, get_scores, list_hackathons, list_projects
 
 st.set_page_config(page_title="Project Detail - Hackathon Judge", layout="wide")
 st.title("📄 Project Detail")
@@ -50,7 +50,9 @@ if selected_id:
 
     # --- Evaluation Scores ---
     try:
-        all_scores = get_scores(1)
+        leaderboard = get_leaderboard(hid)
+        latest_run_id = leaderboard[0]["run_id"] if leaderboard else None
+        all_scores = get_scores(latest_run_id) if latest_run_id else []
         project_scores = [s for s in all_scores if s["project_id"] == selected_id]
 
         if project_scores:

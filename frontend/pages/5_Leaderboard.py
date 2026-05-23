@@ -133,7 +133,7 @@ if selected:
 
     try:
         from api_client import get_scores as fetch_scores
-        all_scores = fetch_scores(1)
+        all_scores = fetch_scores(entry["run_id"])
         project_scores = [s for s in all_scores if s["project_id"] == selected]
 
         if project_scores:

@@ -37,7 +37,7 @@ async def start_evaluation(hackathon_id: int, db: AsyncSession = Depends(get_db)
     await db.commit()
     await db.refresh(run)
 
-    asyncio.create_task(run_evaluation(db, hackathon_id, run.id))
+    asyncio.create_task(run_evaluation(hackathon_id, run.id))
     return run
 
 
@@ -71,7 +71,10 @@ async def get_leaderboard(hackathon_id: int, run_id: int | None = None, db: Asyn
     if run_id is None:
         result = await db.execute(
             select(EvaluationRun)
-            .where(EvaluationRun.hackathon_id == hackathon_id, EvaluationRun.status == "completed")
+            .where(
+                EvaluationRun.hackathon_id == hackathon_id,
+                EvaluationRun.status.in_(["completed", "completed_with_errors"]),
+            )
             .order_by(EvaluationRun.id.desc())
             .limit(1)
         )
@@ -122,6 +125,7 @@ async def get_leaderboard(hackathon_id: int, run_id: int | None = None, db: Asyn
         total_weight = sum(rubrics.values()) or 1
         entries.append(LeaderboardEntry(
             project_id=pid,
+            run_id=run_id,
             title=projects[pid].title,
             weighted_score=round(weighted / total_weight, 4),
             dimension_scores={k: round(v, 4) for k, v in dim_scores.items()},

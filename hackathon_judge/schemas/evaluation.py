@@ -40,6 +40,7 @@ class HardRuleResultOut(BaseModel):
 
 class LeaderboardEntry(BaseModel):
     project_id: int
+    run_id: int
     title: str
     weighted_score: float
     dimension_scores: dict[str, float]

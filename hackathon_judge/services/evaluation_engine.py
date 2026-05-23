@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 
 from sqlalchemy import select
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from hackathon_judge.config.settings import get_app_config, get_model_for_dimension
+from hackathon_judge.db.engine import async_session
 from hackathon_judge.db.models import (
     EvaluationRun,
     HardRule,
@@ -22,6 +24,20 @@ from hackathon_judge.services.llm_provider import get_litellm_model
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
+
+_API_KEY_CONFIG_KEYS = {
+    "openai_api_key": "OPENAI_API_KEY",
+    "anthropic_api_key": "ANTHROPIC_API_KEY",
+    "deepseek_api_key": "DEEPSEEK_API_KEY",
+    "gemini_api_key": "GEMINI_API_KEY",
+}
+
+
+async def _load_api_keys_from_db(session: AsyncSession):
+    for config_key, env_var in _API_KEY_CONFIG_KEYS.items():
+        value = await get_app_config(session, config_key)
+        if value:
+            os.environ[env_var] = value
 
 
 def _build_evaluation_input(project: Project, project_data: ProjectData | None, rubric: Rubric) -> tuple[str, str]:
@@ -120,7 +136,10 @@ def _check_hard_rule(project_data: ProjectData | None, rule: HardRule) -> tuple[
         commits = project_data.commit_summary
         if isinstance(commits, list):
             count = len(commits)
-            threshold = int(rule.check_value)
+            try:
+                threshold = int(rule.check_value)
+            except (ValueError, TypeError):
+                return False, f"Invalid threshold value: '{rule.check_value}'"
             passed = count >= threshold
             return passed, f"Commit count: {count} (min: {threshold})"
         return False, "No commit data"
@@ -129,82 +148,131 @@ def _check_hard_rule(project_data: ProjectData | None, rule: HardRule) -> tuple[
 
 
 async def run_evaluation(
-    session: AsyncSession,
     hackathon_id: int,
     evaluation_run_id: int,
 ):
-    run_result = await session.execute(
-        select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
-    )
-    run = run_result.scalar_one()
-    run.status = "running"
-    run.started_at = datetime.utcnow()
-    await session.commit()
+    async with async_session() as session:
+        try:
+            await _load_api_keys_from_db(session)
 
-    rubric_result = await session.execute(
-        select(Rubric).where(Rubric.hackathon_id == hackathon_id, Rubric.is_active == True)
-    )
-    rubrics = list(rubric_result.scalars().all())
-
-    project_result = await session.execute(
-        select(Project)
-        .where(Project.hackathon_id == hackathon_id)
-        .options(selectinload(Project.data))
-    )
-    projects = list(project_result.scalars().all())
-
-    rule_result = await session.execute(
-        select(HardRule).where(HardRule.hackathon_id == hackathon_id)
-    )
-    hard_rules = list(rule_result.scalars().all())
-
-    run.total_count = len(projects) * len(rubrics)
-    await session.commit()
-
-    concurrency = int(await get_app_config(session, "concurrency") or "3")
-    semaphore = asyncio.Semaphore(concurrency)
-
-    async def evaluate_project_dimension(project: Project, rubric: Rubric):
-        async with semaphore:
-            model_name = await get_model_for_dimension(session, rubric.dimension)
-
-            result = await _evaluate_single(project, project.data, rubric, model_name)
-
-            score = ProjectScore(
-                evaluation_run_id=evaluation_run_id,
-                project_id=project.id,
-                dimension=rubric.dimension,
-                score=result["score"],
-                raw_score=result["raw_score"],
-                reasoning=result["reasoning"],
-                model_used=model_name,
-                tokens_used=0,
-                status=result["status"],
+            run_result = await session.execute(
+                select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
             )
-            session.add(score)
-            run.completed_count += 1
+            run = run_result.scalar_one()
+            run.status = "running"
+            run.started_at = datetime.utcnow()
             await session.commit()
 
-    for project in projects:
-        for rule in hard_rules:
-            passed, detail = _check_hard_rule(project.data, rule)
-            hr_result = HardRuleResult(
-                evaluation_run_id=evaluation_run_id,
-                project_id=project.id,
-                hard_rule_id=rule.id,
-                passed=passed,
-                detail=detail,
+            rubric_result = await session.execute(
+                select(Rubric).where(Rubric.hackathon_id == hackathon_id, Rubric.is_active == True)
             )
-            session.add(hr_result)
+            rubrics = list(rubric_result.scalars().all())
+
+            project_result = await session.execute(
+                select(Project)
+                .where(Project.hackathon_id == hackathon_id)
+                .options(selectinload(Project.data))
+            )
+            projects = list(project_result.scalars().all())
+
+            rule_result = await session.execute(
+                select(HardRule).where(HardRule.hackathon_id == hackathon_id)
+            )
+            hard_rules = list(rule_result.scalars().all())
+
+            run.total_count = len(projects) * len(rubrics)
+            await session.commit()
+
+            concurrency = int(await get_app_config(session, "concurrency") or "3")
+            semaphore = asyncio.Semaphore(concurrency)
+
+            project_rubric_args = []
+            for project in projects:
+                for rubric in rubrics:
+                    model_name = await get_model_for_dimension(session, rubric.dimension)
+                    project_rubric_args.append((project, project.data, rubric, model_name))
+
+            for project in projects:
+                for rule in hard_rules:
+                    passed, detail = _check_hard_rule(project.data, rule)
+                    hr_result = HardRuleResult(
+                        evaluation_run_id=evaluation_run_id,
+                        project_id=project.id,
+                        hard_rule_id=rule.id,
+                        passed=passed,
+                        detail=detail,
+                    )
+                    session.add(hr_result)
+                await session.commit()
+
+        except Exception as e:
+            logger.error(f"Evaluation setup failed: {e}")
+            async with async_session() as err_session:
+                res = await err_session.execute(
+                    select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
+                )
+                run = res.scalar_one()
+                run.status = "error"
+                run.finished_at = datetime.utcnow()
+                await err_session.commit()
+            return
+
+    async def evaluate_and_save(
+        project: Project,
+        project_data: ProjectData | None,
+        rubric: Rubric,
+        model_name: str,
+    ):
+        async with semaphore:
+            result = await _evaluate_single(project, project_data, rubric, model_name)
+
+            async with async_session() as task_session:
+                score = ProjectScore(
+                    evaluation_run_id=evaluation_run_id,
+                    project_id=project.id,
+                    dimension=rubric.dimension,
+                    score=result["score"],
+                    raw_score=result["raw_score"],
+                    reasoning=result["reasoning"],
+                    model_used=model_name,
+                    tokens_used=0,
+                    status=result["status"],
+                )
+                task_session.add(score)
+
+                run_result = await task_session.execute(
+                    select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
+                )
+                run = run_result.scalar_one()
+                run.completed_count += 1
+                await task_session.commit()
+
+            return result
+
+    tasks = [
+        evaluate_and_save(project, project_data, rubric, model_name)
+        for project, project_data, rubric, model_name in project_rubric_args
+    ]
+
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    error_count = sum(
+        1 for r in results
+        if isinstance(r, Exception) or (isinstance(r, dict) and r.get("status") == "error")
+    )
+
+    async with async_session() as session:
+        run_result = await session.execute(
+            select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
+        )
+        run = run_result.scalar_one()
+
+        if error_count == len(results):
+            run.status = "error"
+        elif error_count > 0:
+            run.status = "completed_with_errors"
+        else:
+            run.status = "completed"
+
+        run.finished_at = datetime.utcnow()
         await session.commit()
-
-    tasks = []
-    for project in projects:
-        for rubric in rubrics:
-            tasks.append(evaluate_project_dimension(project, rubric))
-
-    await asyncio.gather(*tasks, return_exceptions=True)
-
-    run.status = "completed"
-    run.finished_at = datetime.utcnow()
-    await session.commit()

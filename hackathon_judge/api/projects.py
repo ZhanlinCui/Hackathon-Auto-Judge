@@ -89,9 +89,17 @@ async def scrape_all(hackathon_id: int, db: AsyncSession = Depends(get_db)):
     if not projects:
         return {"message": "No projects to scrape"}
 
+    project_ids = [p.id for p in projects]
+
     async def do_scrape():
-        for p in projects:
-            await scrape_project(db, p)
+        from hackathon_judge.db.engine import async_session
+
+        for pid in project_ids:
+            async with async_session() as session:
+                res = await session.execute(select(Project).where(Project.id == pid))
+                project = res.scalar_one_or_none()
+                if project:
+                    await scrape_project(session, project)
 
     asyncio.create_task(do_scrape())
     return {"message": f"Scraping {len(projects)} projects in background"}

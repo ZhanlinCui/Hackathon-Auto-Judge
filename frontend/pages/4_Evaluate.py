@@ -39,7 +39,7 @@ with col1:
     st.markdown(f"- Scraped (ready): **{len(scraped)}**")
     not_ready = len(projects) - len(scraped)
     if not_ready:
-        st.warning(f"{not_ready} projects not scraped — they will be skipped or evaluated without code data.")
+        st.warning(f"{not_ready} projects not scraped — they will be evaluated with limited context (pitch/description only, no code data).")
 
 with col2:
     st.markdown("**Model & Dimensions / 模型与维度**")
@@ -56,7 +56,7 @@ with col2:
             dim_model = configs.get(f"model_{r['dimension']}", "") or model
             st.markdown(f"  - {r['name']} ({r['weight']:.0%}) → `{dim_model}`")
 
-        total_evals = len(scraped) * len(active_rubrics)
+        total_evals = len(projects) * len(active_rubrics)
         st.markdown(f"- Total LLM calls: **{total_evals}**")
     except Exception:
         st.caption("Cannot load config details.")
@@ -66,7 +66,7 @@ st.divider()
 if "eval_run_id" not in st.session_state:
     st.session_state.eval_run_id = None
 
-if st.button("🚀 Start Evaluation", type="primary", disabled=len(scraped) == 0, use_container_width=True):
+if st.button("🚀 Start Evaluation", type="primary", use_container_width=True):
     result = start_evaluation(hid)
     st.session_state.eval_run_id = result["id"]
     st.rerun()
@@ -90,12 +90,15 @@ if st.session_state.eval_run_id:
             f"**Status:** {eval_status} | **Progress:** {completed}/{total} ({pct:.0%})"
         )
 
-        if eval_status in ("completed", "error"):
+        if eval_status in ("completed", "completed_with_errors", "error"):
             break
         time.sleep(2)
 
     if run["status"] == "completed":
         st.success("✅ Evaluation completed! Go to the **Leaderboard** page to view results.")
+        st.session_state.eval_run_id = None
+    elif run["status"] == "completed_with_errors":
+        st.warning("⚠️ Evaluation completed with some errors. Partial results are available on the **Leaderboard** page. Check server logs for details.")
         st.session_state.eval_run_id = None
     elif run["status"] == "error":
         st.error("❌ Evaluation encountered an error. Check server logs for details.")

@@ -143,8 +143,12 @@ with col_test:
                 timeout=30,
             )
             if resp.status_code == 200:
-                st.success("LLM connection successful!")
+                data = resp.json()
+                if data.get("status") == "ok":
+                    st.success(f"LLM connection successful! Model: `{data.get('model')}`")
+                else:
+                    st.error(f"LLM connection failed: {data.get('error', 'Unknown error')}")
             else:
                 st.warning("Test endpoint not available. Save config and try running an evaluation.")
         except Exception:
-            st.warning("Test endpoint not available. Save config and try running an evaluation.")
+            st.warning("Cannot connect to backend. Is the server running?")

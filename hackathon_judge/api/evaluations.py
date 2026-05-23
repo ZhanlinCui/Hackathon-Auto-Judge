@@ -24,6 +24,8 @@ from hackathon_judge.services.evaluation_engine import run_evaluation
 
 router = APIRouter(prefix="/api", tags=["evaluations"])
 
+_background_tasks: set[asyncio.Task] = set()
+
 
 @router.post("/hackathons/{hackathon_id}/evaluate", response_model=EvaluationRunOut)
 async def start_evaluation(hackathon_id: int, db: AsyncSession = Depends(get_db)):
@@ -37,7 +39,9 @@ async def start_evaluation(hackathon_id: int, db: AsyncSession = Depends(get_db)
     await db.commit()
     await db.refresh(run)
 
-    asyncio.create_task(run_evaluation(hackathon_id, run.id))
+    task = asyncio.create_task(run_evaluation(hackathon_id, run.id))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return run
 
 

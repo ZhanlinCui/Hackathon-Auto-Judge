@@ -101,4 +101,5 @@ if st.session_state.eval_run_id:
         st.warning("⚠️ Evaluation completed with some errors. Partial results are available on the **Leaderboard** page. Check server logs for details.")
         st.session_state.eval_run_id = None
     elif run["status"] == "error":
-        st.error("❌ Evaluation encountered an error. Check server logs for details.")
+        st.error("Evaluation encountered an error. Check server logs for details.")
+        st.session_state.eval_run_id = None

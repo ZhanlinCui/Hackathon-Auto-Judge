@@ -12,6 +12,8 @@ from hackathon_judge.services.ingestion import import_projects, scrape_project
 
 router = APIRouter(prefix="/api", tags=["projects"])
 
+_background_tasks: set[asyncio.Task] = set()
+
 
 @router.post("/hackathons", response_model=HackathonOut)
 async def create_hackathon(body: HackathonCreate, db: AsyncSession = Depends(get_db)):
@@ -70,6 +72,8 @@ async def import_csv(
     db: AsyncSession = Depends(get_db),
 ):
     content = await file.read()
+    if len(content) > 10_000_000:
+        raise HTTPException(413, "File too large (max 10 MB)")
     try:
         projects = await import_projects(db, hackathon_id, content)
     except ValueError as e:
@@ -101,5 +105,7 @@ async def scrape_all(hackathon_id: int, db: AsyncSession = Depends(get_db)):
                 if project:
                     await scrape_project(session, project)
 
-    asyncio.create_task(do_scrape())
+    task = asyncio.create_task(do_scrape())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     return {"message": f"Scraping {len(projects)} projects in background"}

@@ -24,7 +24,10 @@ async def export_excel(hackathon_id: int, run_id: int | None = None, db: AsyncSe
     if run_id is None:
         result = await db.execute(
             select(EvaluationRun)
-            .where(EvaluationRun.hackathon_id == hackathon_id, EvaluationRun.status == "completed")
+            .where(
+                EvaluationRun.hackathon_id == hackathon_id,
+                EvaluationRun.status.in_(["completed", "completed_with_errors"]),
+            )
             .order_by(EvaluationRun.id.desc())
             .limit(1)
         )

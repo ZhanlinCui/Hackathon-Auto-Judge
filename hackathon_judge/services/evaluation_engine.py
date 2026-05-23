@@ -2,9 +2,9 @@ import asyncio
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -38,6 +38,8 @@ async def _load_api_keys_from_db(session: AsyncSession):
         value = await get_app_config(session, config_key)
         if value:
             os.environ[env_var] = value
+        else:
+            os.environ.pop(env_var, None)
 
 
 def _build_evaluation_input(project: Project, project_data: ProjectData | None, rubric: Rubric) -> tuple[str, str]:
@@ -102,10 +104,10 @@ async def _evaluate_single(
         try:
             await metric.a_measure(test_case)
             raw_score = metric.score if metric.score is not None else 0.0
-            normalized = raw_score / 5.0 if raw_score > 1 else raw_score
+            score = min(max(raw_score, 0.0), 1.0)
             return {
                 "raw_score": raw_score,
-                "score": min(max(normalized, 0.0), 1.0),
+                "score": score,
                 "reasoning": metric.reason or "",
                 "status": "done",
             }
@@ -160,7 +162,7 @@ async def run_evaluation(
             )
             run = run_result.scalar_one()
             run.status = "running"
-            run.started_at = datetime.utcnow()
+            run.started_at = datetime.now(UTC)
             await session.commit()
 
             rubric_result = await session.execute(
@@ -205,6 +207,12 @@ async def run_evaluation(
                     session.add(hr_result)
                 await session.commit()
 
+            if not project_rubric_args:
+                run.status = "completed"
+                run.finished_at = datetime.now(UTC)
+                await session.commit()
+                return
+
         except Exception as e:
             logger.error(f"Evaluation setup failed: {e}")
             async with async_session() as err_session:
@@ -213,7 +221,7 @@ async def run_evaluation(
                 )
                 run = res.scalar_one()
                 run.status = "error"
-                run.finished_at = datetime.utcnow()
+                run.finished_at = datetime.now(UTC)
                 await err_session.commit()
             return
 
@@ -240,11 +248,11 @@ async def run_evaluation(
                 )
                 task_session.add(score)
 
-                run_result = await task_session.execute(
-                    select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
+                await task_session.execute(
+                    update(EvaluationRun)
+                    .where(EvaluationRun.id == evaluation_run_id)
+                    .values(completed_count=EvaluationRun.completed_count + 1)
                 )
-                run = run_result.scalar_one()
-                run.completed_count += 1
                 await task_session.commit()
 
             return result
@@ -274,5 +282,5 @@ async def run_evaluation(
         else:
             run.status = "completed"
 
-        run.finished_at = datetime.utcnow()
+        run.finished_at = datetime.now(UTC)
         await session.commit()

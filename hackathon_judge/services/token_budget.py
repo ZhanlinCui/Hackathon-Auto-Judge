@@ -2,23 +2,30 @@ import tiktoken
 
 TRUNCATION_MARKER = "\n[... truncated ...]\n"
 
-_encoder = tiktoken.get_encoding("cl100k_base")
+_encoder = None
+
+
+def _get_encoder():
+    global _encoder
+    if _encoder is None:
+        _encoder = tiktoken.get_encoding("cl100k_base")
+    return _encoder
 
 
 def count_tokens(text: str) -> int:
     if not text:
         return 0
-    return len(_encoder.encode(text))
+    return len(_get_encoder().encode(text))
 
 
 def truncate_to_tokens(text: str, max_tokens: int) -> str:
     if not text:
         return text
-    tokens = _encoder.encode(text)
+    tokens = _get_encoder().encode(text)
     if len(tokens) <= max_tokens:
         return text
     truncated_tokens = tokens[:max_tokens]
-    return _encoder.decode(truncated_tokens) + TRUNCATION_MARKER
+    return _get_encoder().decode(truncated_tokens) + TRUNCATION_MARKER
 
 
 class TokenBudget:

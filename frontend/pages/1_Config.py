@@ -3,10 +3,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from api_client import get_config, update_config, update_config_batch
+from api_client import get_config, update_config_batch
 
 st.set_page_config(page_title="Config - Hackathon Judge", layout="wide")
-st.title("⚙️ Configuration")
+st.title("Configuration")
 
 try:
     config_data = get_config()
@@ -16,36 +16,48 @@ except Exception as e:
     st.stop()
 
 st.subheader("LLM API Keys")
-st.info("Set at least one API key. Keys are stored in the local database — never committed to code.")
+st.info("Set at least one API key. Keys are stored in the local database. Leave blank to keep existing key unchanged.")
+
+_SENSITIVE_KEYS = {"openai_api_key", "anthropic_api_key", "gemini_api_key", "deepseek_api_key", "github_token"}
+
+
+def _has_key(key: str) -> bool:
+    val = configs.get(key, "")
+    return bool(val) and val != "****"
+
 
 col1, col2 = st.columns(2)
 
 with col1:
     openai_key = st.text_input(
         "OpenAI API Key",
-        value=configs.get("openai_api_key", ""),
+        value="",
         type="password",
-        help="Get from https://platform.openai.com/api-keys — supports gpt-4o, gpt-4o-mini, etc.",
+        placeholder="Configured" if _has_key("openai_api_key") else "Not set",
+        help="Get from https://platform.openai.com/api-keys",
     )
     anthropic_key = st.text_input(
         "Anthropic API Key",
-        value=configs.get("anthropic_api_key", ""),
+        value="",
         type="password",
-        help="Get from https://console.anthropic.com/ — supports claude-sonnet, claude-opus, etc.",
+        placeholder="Configured" if _has_key("anthropic_api_key") else "Not set",
+        help="Get from https://console.anthropic.com/",
     )
 
 with col2:
     gemini_key = st.text_input(
         "Google Gemini API Key",
-        value=configs.get("gemini_api_key", ""),
+        value="",
         type="password",
-        help="Get from https://aistudio.google.com/apikey — supports gemini-2.5-flash, etc.",
+        placeholder="Configured" if _has_key("gemini_api_key") else "Not set",
+        help="Get from https://aistudio.google.com/apikey",
     )
     deepseek_key = st.text_input(
         "DeepSeek API Key",
-        value=configs.get("deepseek_api_key", ""),
+        value="",
         type="password",
-        help="Get from https://platform.deepseek.com/ — supports deepseek-chat, etc.",
+        placeholder="Configured" if _has_key("deepseek_api_key") else "Not set",
+        help="Get from https://platform.deepseek.com/",
     )
 
 st.divider()
@@ -54,9 +66,10 @@ st.info("Required for scraping GitHub repos. Without a token, rate limit is 60 r
 
 github_token = st.text_input(
     "GitHub Personal Access Token",
-    value=configs.get("github_token", ""),
+    value="",
     type="password",
-    help="Create at https://github.com/settings/tokens — only needs 'public_repo' scope.",
+    placeholder="Configured" if _has_key("github_token") else "Not set",
+    help="Create at https://github.com/settings/tokens",
 )
 
 st.divider()
@@ -113,30 +126,44 @@ with col2:
 
 st.divider()
 
+
+def _build_save_items():
+    items = []
+    if openai_key:
+        items.append({"key": "openai_api_key", "value": openai_key})
+    if anthropic_key:
+        items.append({"key": "anthropic_api_key", "value": anthropic_key})
+    if gemini_key:
+        items.append({"key": "gemini_api_key", "value": gemini_key})
+    if deepseek_key:
+        items.append({"key": "deepseek_api_key", "value": deepseek_key})
+    if github_token:
+        items.append({"key": "github_token", "value": github_token})
+    items.extend([
+        {"key": "default_model", "value": default_model},
+        {"key": "model_technical", "value": model_technical},
+        {"key": "model_feature", "value": model_feature},
+        {"key": "model_uiux", "value": model_uiux},
+        {"key": "model_freshness", "value": model_freshness},
+        {"key": "concurrency", "value": str(concurrency)},
+        {"key": "token_budget", "value": str(token_budget)},
+    ])
+    return items
+
+
 col_save, col_test = st.columns([1, 1])
 
 with col_save:
-    if st.button("💾 Save Configuration", type="primary", use_container_width=True):
-        items = [
-            {"key": "openai_api_key", "value": openai_key},
-            {"key": "anthropic_api_key", "value": anthropic_key},
-            {"key": "gemini_api_key", "value": gemini_key},
-            {"key": "deepseek_api_key", "value": deepseek_key},
-            {"key": "github_token", "value": github_token},
-            {"key": "default_model", "value": default_model},
-            {"key": "model_technical", "value": model_technical},
-            {"key": "model_feature", "value": model_feature},
-            {"key": "model_uiux", "value": model_uiux},
-            {"key": "model_freshness", "value": model_freshness},
-            {"key": "concurrency", "value": str(concurrency)},
-            {"key": "token_budget", "value": str(token_budget)},
-        ]
-        update_config_batch(items)
+    if st.button("Save Configuration", type="primary", use_container_width=True):
+        update_config_batch(_build_save_items())
         st.success("Configuration saved!")
 
 with col_test:
-    if st.button("🔗 Test LLM Connection", use_container_width=True):
+    if st.button("Test LLM Connection", use_container_width=True):
         import httpx
+        save_items = _build_save_items()
+        if save_items:
+            update_config_batch(save_items)
         try:
             resp = httpx.post(
                 "http://127.0.0.1:8000/api/config/test",
@@ -149,6 +176,6 @@ with col_test:
                 else:
                     st.error(f"LLM connection failed: {data.get('error', 'Unknown error')}")
             else:
-                st.warning("Test endpoint not available. Save config and try running an evaluation.")
+                st.warning("Test endpoint not available.")
         except Exception:
             st.warning("Cannot connect to backend. Is the server running?")

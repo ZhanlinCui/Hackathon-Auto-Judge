@@ -64,7 +64,7 @@ def highlight_scores(val):
             return "background-color: #ffc7ce; color: #9c0006"
     return ""
 
-styled = df.style.applymap(highlight_scores, subset=score_cols).format(
+styled = df.style.map(highlight_scores, subset=score_cols).format(
     {col: "{:.2%}" for col in score_cols}
 )
 

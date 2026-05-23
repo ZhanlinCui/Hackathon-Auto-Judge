@@ -24,6 +24,8 @@ def parse_csv(content: bytes) -> list[dict]:
 
     projects = []
     for _, row in df.iterrows():
+        if pd.isna(row["title"]):
+            continue
         proj = {"title": str(row["title"]).strip()}
         if not proj["title"]:
             continue
@@ -51,8 +53,15 @@ async def import_projects(
     if not hackathon:
         raise ValueError(f"Hackathon {hackathon_id} not found")
 
+    existing_result = await session.execute(
+        select(Project.title).where(Project.hackathon_id == hackathon_id)
+    )
+    existing_titles = {t for t in existing_result.scalars().all()}
+
     projects = []
     for p in parsed:
+        if p["title"] in existing_titles:
+            continue
         proj = Project(
             hackathon_id=hackathon_id,
             title=p["title"],
@@ -78,7 +87,8 @@ async def scrape_project(session: AsyncSession, project: Project) -> ProjectData
         await session.commit()
         return None
 
-    token = (await get_app_config(session, "github_token")) or ""
+    from hackathon_judge.config.settings import get_settings
+    token = (await get_app_config(session, "github_token")) or get_settings().github_token or ""
     budget = int(await get_app_config(session, "token_budget") or "30000")
 
     project.scrape_status = "scraping"

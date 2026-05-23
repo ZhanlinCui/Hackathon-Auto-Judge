@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Starting Hackathon Judge..."
+echo "Starting Hackathon Auto Judge..."
 
 uvicorn hackathon_judge.main:app --host 127.0.0.1 --port 8000 &
 API_PID=$!

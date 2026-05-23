@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">⚖️ Hackathon Judge</h1>
+  <h1 align="center">⚖️ Hackathon Auto Judge</h1>
   <p align="center">
     <strong>AI-powered evaluation platform for hackathon projects</strong>
   </p>
@@ -9,8 +9,8 @@
   <p align="center">
     <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
-    <a href="https://github.com/ZhanlinCui/Hackathon-Judge/stargazers"><img src="https://img.shields.io/github/stars/ZhanlinCui/Hackathon-Judge?style=social" alt="GitHub Stars"></a>
-    <a href="https://github.com/ZhanlinCui/Hackathon-Judge/issues"><img src="https://img.shields.io/github/issues/ZhanlinCui/Hackathon-Judge" alt="Issues"></a>
+    <a href="https://github.com/ZhanlinCui/Hackathon-Auto-Judge/stargazers"><img src="https://img.shields.io/github/stars/ZhanlinCui/Hackathon-Auto-Judge?style=social" alt="GitHub Stars"></a>
+    <a href="https://github.com/ZhanlinCui/Hackathon-Auto-Judge/issues"><img src="https://img.shields.io/github/issues/ZhanlinCui/Hackathon-Auto-Judge" alt="Issues"></a>
   </p>
   <p align="center">
     <a href="README_CN.md">🇨🇳 中文</a> · <a href="#-quick-start">Quick Start</a> · <a href="http://127.0.0.1:8000/docs">API Docs</a>
@@ -19,11 +19,11 @@
 
 ---
 
-## 🤔 Why Hackathon Judge?
+## 🤔 Why Hackathon Auto Judge?
 
 Judging hackathon projects is **painful**. Dozens of repos, inconsistent pitches, subjective scoring — it doesn't scale.
 
-**Hackathon Judge automates this.** It scrapes each project's GitHub repo, feeds the code to an LLM through [deepeval](https://github.com/confident-ai/deepeval) GEval metrics, and produces **structured, explainable scores** across multiple dimensions — with full reasoning for every score.
+**Hackathon Auto Judge automates this.** It scrapes each project's GitHub repo, feeds the code to an LLM through [deepeval](https://github.com/confident-ai/deepeval) GEval metrics, and produces **structured, explainable scores** across multiple dimensions — with full reasoning for every score.
 
 > **For hackathon organizers** who want fair, consistent, and scalable evaluation.
 > **For developers** who want transparent feedback on their projects.
@@ -107,8 +107,8 @@ graph LR
 **1. Install**
 
 ```bash
-git clone https://github.com/ZhanlinCui/Hackathon-Judge.git
-cd Hackathon-Judge
+git clone https://github.com/ZhanlinCui/Hackathon-Auto-Judge.git
+cd Hackathon-Auto-Judge
 pip install -e .
 ```
 
@@ -272,7 +272,7 @@ Full interactive docs available at `http://127.0.0.1:8000/docs` when the server 
 <summary><strong>📁 Project Structure</strong></summary>
 
 ```
-Hackathon-Judge/
+Hackathon-Auto-Judge/
 ├── hackathon_judge/              # Backend package
 │   ├── main.py                   # FastAPI app + startup
 │   ├── config/settings.py        # Pydantic Settings + AppConfig helpers
@@ -308,8 +308,8 @@ Contributions are welcome! Here's how:
 
 ```bash
 # 1. Fork and clone
-git clone https://github.com/<your-username>/Hackathon-Judge.git
-cd Hackathon-Judge
+git clone https://github.com/<your-username>/Hackathon-Auto-Judge.git
+cd Hackathon-Auto-Judge
 
 # 2. Install in dev mode
 pip install -e .

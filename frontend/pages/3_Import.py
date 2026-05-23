@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api_client import import_csv, list_hackathons, list_projects, scrape_all
 
-st.set_page_config(page_title="Import - Hackathon Judge", layout="wide")
+st.set_page_config(page_title="Import - Hackathon Auto Judge", layout="wide")
 st.title("📥 Import Projects")
 
 try:

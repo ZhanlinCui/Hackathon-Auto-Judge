@@ -14,7 +14,7 @@ from api_client import (
     update_rubric,
 )
 
-st.set_page_config(page_title="Rubrics - Hackathon Judge", layout="wide")
+st.set_page_config(page_title="Rubrics - Hackathon Auto Judge", layout="wide")
 st.title("📋 Evaluation Rubrics")
 
 st.info("""

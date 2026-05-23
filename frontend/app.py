@@ -1,8 +1,8 @@
 import streamlit as st
 
-st.set_page_config(page_title="Hackathon Judge", page_icon="⚖️", layout="wide")
+st.set_page_config(page_title="Hackathon Auto Judge", page_icon="⚖️", layout="wide")
 
-st.title("⚖️ Hackathon Judge")
+st.title("⚖️ Hackathon Auto Judge")
 st.caption("AI-Powered Hackathon Project Evaluation Platform")
 
 st.markdown("---")

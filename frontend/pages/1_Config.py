@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api_client import get_config, update_config_batch
 
-st.set_page_config(page_title="Config - Hackathon Judge", layout="wide")
+st.set_page_config(page_title="Config - Hackathon Auto Judge", layout="wide")
 st.title("Configuration")
 
 try:

@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api_client import get_leaderboard, get_project, get_project_data, get_scores, list_hackathons, list_projects
 
-st.set_page_config(page_title="Project Detail - Hackathon Judge", layout="wide")
+st.set_page_config(page_title="Project Detail - Hackathon Auto Judge", layout="wide")
 st.title("📄 Project Detail")
 
 try:

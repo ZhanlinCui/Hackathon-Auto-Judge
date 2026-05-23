@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">⚖️ Hackathon Judge</h1>
+  <h1 align="center">⚖️ Hackathon Auto Judge</h1>
   <p align="center">
     <strong>AI 驱动的黑客松项目评审平台</strong>
   </p>
@@ -9,8 +9,8 @@
   <p align="center">
     <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
-    <a href="https://github.com/ZhanlinCui/Hackathon-Judge/stargazers"><img src="https://img.shields.io/github/stars/ZhanlinCui/Hackathon-Judge?style=social" alt="GitHub Stars"></a>
-    <a href="https://github.com/ZhanlinCui/Hackathon-Judge/issues"><img src="https://img.shields.io/github/issues/ZhanlinCui/Hackathon-Judge" alt="Issues"></a>
+    <a href="https://github.com/ZhanlinCui/Hackathon-Auto-Judge/stargazers"><img src="https://img.shields.io/github/stars/ZhanlinCui/Hackathon-Auto-Judge?style=social" alt="GitHub Stars"></a>
+    <a href="https://github.com/ZhanlinCui/Hackathon-Auto-Judge/issues"><img src="https://img.shields.io/github/issues/ZhanlinCui/Hackathon-Auto-Judge" alt="Issues"></a>
   </p>
   <p align="center">
     <a href="README.md">🇺🇸 English</a> · <a href="#-快速开始">快速开始</a> · <a href="http://127.0.0.1:8000/docs">API 文档</a>
@@ -19,11 +19,11 @@
 
 ---
 
-## 🤔 为什么需要 Hackathon Judge？
+## 🤔 为什么需要 Hackathon Auto Judge？
 
 黑客松评审是一件**痛苦的事**。几十个仓库、风格各异的演示、主观的评分标准 — 完全无法规模化。
 
-**Hackathon Judge 自动化了这一切。** 它抓取每个项目的 GitHub 仓库，通过 [deepeval](https://github.com/confident-ai/deepeval) GEval 指标将代码送给 LLM 评审，产出**结构化、可解释的评分** — 每个分数都有完整的推理过程。
+**Hackathon Auto Judge 自动化了这一切。** 它抓取每个项目的 GitHub 仓库，通过 [deepeval](https://github.com/confident-ai/deepeval) GEval 指标将代码送给 LLM 评审，产出**结构化、可解释的评分** — 每个分数都有完整的推理过程。
 
 > **面向黑客松主办方：** 公平、一致、可规模化的评审。<br/>
 > **面向参赛者：** 透明、可理解的项目反馈。
@@ -107,8 +107,8 @@ graph LR
 **1. 安装**
 
 ```bash
-git clone https://github.com/ZhanlinCui/Hackathon-Judge.git
-cd Hackathon-Judge
+git clone https://github.com/ZhanlinCui/Hackathon-Auto-Judge.git
+cd Hackathon-Auto-Judge
 pip install -e .
 ```
 
@@ -272,7 +272,7 @@ cp .env.example .env
 <summary><strong>📁 项目结构</strong></summary>
 
 ```
-Hackathon-Judge/
+Hackathon-Auto-Judge/
 ├── hackathon_judge/              # 后端包
 │   ├── main.py                   # FastAPI 应用 + 启动逻辑
 │   ├── config/settings.py        # Pydantic Settings + AppConfig 助手
@@ -308,8 +308,8 @@ Hackathon-Judge/
 
 ```bash
 # 1. Fork 并克隆
-git clone https://github.com/<your-username>/Hackathon-Judge.git
-cd Hackathon-Judge
+git clone https://github.com/<your-username>/Hackathon-Auto-Judge.git
+cd Hackathon-Auto-Judge
 
 # 2. 开发模式安装
 pip install -e .

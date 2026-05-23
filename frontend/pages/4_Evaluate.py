@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api_client import get_config, get_evaluation_run, list_hackathons, list_projects, list_rubrics, start_evaluation
 
-st.set_page_config(page_title="Evaluate - Hackathon Judge", layout="wide")
+st.set_page_config(page_title="Evaluate - Hackathon Auto Judge", layout="wide")
 st.title("🔬 Run Evaluation")
 
 try:

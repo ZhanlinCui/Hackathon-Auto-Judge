@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from api_client import export_excel, get_leaderboard, get_scores, list_hackathons
 
-st.set_page_config(page_title="Leaderboard - Hackathon Judge", layout="wide")
+st.set_page_config(page_title="Leaderboard - Hackathon Auto Judge", layout="wide")
 st.title("🏆 Leaderboard")
 
 try:

@@ -1,60 +1,110 @@
-# ⚖️ Hackathon Judge
+<p align="center">
+  <h1 align="center">⚖️ Hackathon Judge</h1>
+  <p align="center">
+    <strong>AI-powered evaluation platform for hackathon projects</strong>
+  </p>
+  <p align="center">
+    Import projects. Scrape repos. Let LLMs score them. Get a leaderboard.
+  </p>
+  <p align="center">
+    <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"></a>
+    <a href="https://github.com/ZhanlinCui/Hackathon-Judge/stargazers"><img src="https://img.shields.io/github/stars/ZhanlinCui/Hackathon-Judge?style=social" alt="GitHub Stars"></a>
+    <a href="https://github.com/ZhanlinCui/Hackathon-Judge/issues"><img src="https://img.shields.io/github/issues/ZhanlinCui/Hackathon-Judge" alt="Issues"></a>
+  </p>
+  <p align="center">
+    <a href="README_CN.md">🇨🇳 中文</a> · <a href="#-quick-start">Quick Start</a> · <a href="http://127.0.0.1:8000/docs">API Docs</a>
+  </p>
+</p>
 
-[中文文档](README_CN.md)
+---
 
-**AI-powered hackathon project evaluation platform.** Import projects via CSV, scrape GitHub repos, run LLM-based evaluation across customizable dimensions, and view results on an interactive leaderboard.
+## 🤔 Why Hackathon Judge?
 
-## Architecture
+Judging hackathon projects is **painful**. Dozens of repos, inconsistent pitches, subjective scoring — it doesn't scale.
+
+**Hackathon Judge automates this.** It scrapes each project's GitHub repo, feeds the code to an LLM through [deepeval](https://github.com/confident-ai/deepeval) GEval metrics, and produces **structured, explainable scores** across multiple dimensions — with full reasoning for every score.
+
+> **For hackathon organizers** who want fair, consistent, and scalable evaluation.
+> **For developers** who want transparent feedback on their projects.
+
+---
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+### 🔬 LLM Evaluation
+Score projects across customizable dimensions using any LLM. Built on deepeval GEval — the same framework used for LLM testing in production.
+
+</td>
+<td width="33%" valign="top">
+
+### 🔗 GitHub Scraping
+Auto-fetches README, file tree, source code, config files, and commit history. Smart file selection prioritizes `src/`, `app/`, `lib/` directories.
+
+</td>
+<td width="33%" valign="top">
+
+### 📊 Multi-Dimension
+4 built-in dimensions: Technical Soundness, Feature Alignment, UI/UX Innovation, Code Freshness. Add your own or customize everything.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+### 🏆 Interactive Leaderboard
+Weighted scores, radar charts, conditional coloring, per-dimension sorting. Export to Excel with one click.
+
+</td>
+<td width="33%" valign="top">
+
+### 🧠 Explainable Scores
+Every score comes with full LLM reasoning. Understand *why* a project scored high or low on each dimension.
+
+</td>
+<td width="33%" valign="top">
+
+### 🌐 Multi-Provider LLM
+OpenAI, Anthropic, Google Gemini, DeepSeek — or any of 100+ providers via [LiteLLM](https://github.com/BerriAI/litellm). Mix models per dimension.
+
+</td>
+</tr>
+</table>
+
+---
+
+## ⚙️ How It Works
 
 ```mermaid
 graph LR
-    A[CSV Import] --> B[GitHub Scraper]
-    B --> C[Token Budget Control]
-    C --> D[deepeval GEval Metrics]
-    D --> E[Leaderboard & Export]
-
-    subgraph Backend
-        B
-        C
-        D
-    end
-
-    subgraph Frontend
-        A
-        E
-    end
+    A["📄 CSV Import"] --> B["🔗 GitHub Scraper"]
+    B --> C["📏 Token Budget"]
+    C --> D["🤖 LLM + GEval"]
+    D --> E["🏆 Leaderboard"]
+    
+    style A fill:#4CAF50,stroke:#333,color:#fff
+    style B fill:#2196F3,stroke:#333,color:#fff
+    style C fill:#FF9800,stroke:#333,color:#fff
+    style D fill:#9C27B0,stroke:#333,color:#fff
+    style E fill:#F44336,stroke:#333,color:#fff
 ```
 
-| Layer | Technology |
-|-------|-----------|
-| Backend API | FastAPI |
-| Frontend | Streamlit |
-| Database | SQLite (async via aiosqlite) |
-| LLM Integration | LiteLLM (multi-provider) |
-| Evaluation Framework | deepeval GEval |
-| GitHub Scraping | PyGithub |
+| Step | What Happens |
+|------|-------------|
+| **1. Import** | Upload a CSV with project info (title, GitHub URL, description) |
+| **2. Scrape** | System fetches README, source code, configs, and commits via GitHub API |
+| **3. Evaluate** | Each project is scored by an LLM across your configured dimensions using [deepeval GEval](https://docs.confident-ai.com/docs/metrics-llm-evals) |
+| **4. Review** | View ranked leaderboard, read per-score reasoning, export to Excel |
 
-## Features
+---
 
-- **Multi-provider LLM support** — OpenAI, Anthropic, Google Gemini, DeepSeek, and any provider supported by LiteLLM
-- **4 default evaluation dimensions** — Technical Soundness, Feature Alignment, UI/UX Innovation, Code Freshness
-- **Customizable rubrics** — Add, edit, or remove dimensions with custom criteria and evaluation steps
-- **Hard rules** — Programmatic pass/fail checks (README contains keyword, file exists, minimum commit count)
-- **GitHub scraping** — Auto-fetches README, file tree, source code, config files, and commit history
-- **Token budget control** — Smart prioritization and truncation to fit within LLM context limits
-- **Interactive leaderboard** — Weighted scores, radar charts, per-dimension comparison, conditional coloring
-- **Per-project reasoning** — Full LLM reasoning for every score, viewable in the UI
-- **Excel export** — Download results with leaderboard + detailed sheets
-- **Per-dimension model override** — Use different models for different evaluation dimensions
+## 🚀 Quick Start
 
-## Quick Start
-
-### Prerequisites
-
-- Python 3.10+
-- An API key for at least one LLM provider
-
-### Install
+**1. Install**
 
 ```bash
 git clone https://github.com/ZhanlinCui/Hackathon-Judge.git
@@ -62,83 +112,230 @@ cd Hackathon-Judge
 pip install -e .
 ```
 
-### Configure
+**2. Configure**
 
 ```bash
 cp .env.example .env
-# Edit .env and add your API keys
+# Add at least one LLM API key (OpenAI, Gemini, Anthropic, or DeepSeek)
+# Add a GitHub token for repo scraping (optional but recommended)
 ```
 
-### Run
+**3. Run**
 
 ```bash
-# Option 1: Use the start script
 ./start.sh
-
-# Option 2: Start manually
-uvicorn hackathon_judge.main:app --host 127.0.0.1 --port 8000 &
-streamlit run frontend/app.py --server.port 8501
+# API  → http://127.0.0.1:8000  (Swagger docs at /docs)
+# UI   → http://127.0.0.1:8501
 ```
 
-- **API:** http://127.0.0.1:8000 (Docs: http://127.0.0.1:8000/docs)
-- **UI:** http://127.0.0.1:8501
+That's it. Open the UI, configure your API key, import a CSV, and run evaluation.
 
-### Usage
+---
 
-1. **Config** — Enter your LLM API key and GitHub token
-2. **Rubrics** — Review the 4 default dimensions (or customize them)
-3. **Import** — Upload a CSV with project info, then scrape GitHub repos
-4. **Evaluate** — Run AI evaluation (takes ~10s per project per dimension)
-5. **Leaderboard** — View ranked results, radar charts, and export to Excel
+## 📋 Evaluation Dimensions
 
-## CSV Format
+4 dimensions ship by default. All are fully customizable — edit criteria, evaluation steps, weights, or add entirely new ones.
+
+<details>
+<summary><strong>🔧 Technical Soundness</strong> — 30% weight</summary>
+
+**Criteria:** Evaluate code architecture, technology choices, error handling, code organization, and engineering best practices.
+
+**Evaluation Steps:**
+1. Review the project's file structure and code organization
+2. Examine the choice of technologies and frameworks
+3. Look at source code quality — naming, modularity, separation of concerns
+4. Check configuration files — are dependencies reasonable?
+5. Assess commit history — iterative development and meaningful progress?
+6. Rate overall technical soundness on a scale of 1-5
+</details>
+
+<details>
+<summary><strong>🎯 Feature Alignment</strong> — 25% weight</summary>
+
+**Criteria:** Compare the project description and pitch with what the code actually implements. Consider feature completeness, functionality depth, and whether the demo matches the promise.
+
+**Evaluation Steps:**
+1. Read the project description/pitch and identify key features promised
+2. Examine the codebase to verify which features are actually implemented
+3. Assess the depth of each feature — stub or working implementation?
+4. Check if the README documents how to use the features
+5. Consider whether scope is appropriate for a hackathon timeframe
+6. Rate feature alignment on a scale of 1-5
+</details>
+
+<details>
+<summary><strong>🎨 UI/UX Innovation</strong> — 20% weight</summary>
+
+**Criteria:** Evaluate design quality, usability, accessibility, innovative interaction patterns, and overall polish of frontend or user-facing components.
+
+**Evaluation Steps:**
+1. Look at frontend code for design quality
+2. Assess navigation flow and information architecture
+3. Check for responsive design, accessibility, and error states
+4. Evaluate innovative or creative UI/UX patterns
+5. Consider overall user experience implied by code and README
+6. Rate UI/UX innovation on a scale of 1-5
+</details>
+
+<details>
+<summary><strong>🆕 Code Freshness</strong> — 25% weight</summary>
+
+**Criteria:** Evaluate whether this project was genuinely built during the hackathon vs. pre-existing code being repurposed. Consider commit patterns, code consistency, and cohesiveness.
+
+**Evaluation Steps:**
+1. Analyze commit history — are commits spread over the hackathon period?
+2. Check for scaffolding commits followed by feature development
+3. Look for code style consistency
+4. Check for standard boilerplate (OK) vs. pre-built features (not OK)
+5. Assess whether complexity matches what could reasonably be built in a hackathon
+6. Rate code freshness on a scale of 1-5
+</details>
+
+---
+
+## 🌐 Supported LLM Providers
+
+Any model supported by [LiteLLM](https://docs.litellm.ai/docs/providers) works out of the box.
+
+| Provider | Model Examples | Env Variable |
+|----------|---------------|-------------|
+| **OpenAI** | `gpt-4o`, `gpt-4o-mini` | `OPENAI_API_KEY` |
+| **Google Gemini** | `gemini/gemini-2.5-flash`, `gemini/gemini-2.5-pro` | `GEMINI_API_KEY` |
+| **Anthropic** | `anthropic/claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY` |
+| **DeepSeek** | `deepseek/deepseek-chat` | `DEEPSEEK_API_KEY` |
+| **100+ more** | See [LiteLLM docs](https://docs.litellm.ai/docs/providers) | Various |
+
+> **Pro tip:** You can assign different models to different dimensions. Use a cheaper model for straightforward checks and a stronger model for nuanced evaluation.
+
+---
+
+## 📄 CSV Format
 
 | Column | Required | Description |
+|--------|:--------:|-------------|
+| `title` | ✅ | Project name |
+| `description` | | Short description of the project |
+| `github_url` | | GitHub repository URL (for code scraping) |
+| `demo_url` | | Demo or video link |
+| `pitch_text` | | Pitch / elevator description |
+
+> A sample CSV is included at [`data/sample_projects.csv`](data/sample_projects.csv).
+
+---
+
+## 🏗️ Tech Stack
+
+| Component | Technology | Role |
+|-----------|-----------|------|
+| Backend API | [FastAPI](https://fastapi.tiangolo.com/) | REST API with auto-generated docs |
+| Frontend | [Streamlit](https://streamlit.io/) | Interactive UI with charts |
+| Database | [SQLite](https://www.sqlite.org/) + [aiosqlite](https://github.com/omnilib/aiosqlite) | Async persistence, zero setup |
+| LLM Gateway | [LiteLLM](https://github.com/BerriAI/litellm) | Unified interface for 100+ LLM providers |
+| Evaluation | [deepeval](https://github.com/confident-ai/deepeval) | GEval metrics with structured scoring |
+| GitHub | [PyGithub](https://github.com/PyGithub/PyGithub) | Repo scraping via Trees API |
+| Charts | [Plotly](https://plotly.com/python/) | Radar charts & visualizations |
+
+---
+
+<details>
+<summary><strong>📡 API Endpoints (20 endpoints)</strong></summary>
+
+Full interactive docs available at `http://127.0.0.1:8000/docs` when the server is running.
+
+| Method | Endpoint | Description |
 |--------|----------|-------------|
-| `title` | Yes | Project name |
-| `description` | No | Short description |
-| `github_url` | No | GitHub repository URL |
-| `demo_url` | No | Demo or video link |
-| `pitch_text` | No | Pitch / elevator description |
+| `POST` | `/api/hackathons` | Create a hackathon |
+| `GET` | `/api/hackathons` | List all hackathons |
+| `GET` | `/api/hackathons/{id}` | Get hackathon details |
+| `POST` | `/api/hackathons/{id}/import` | Import projects from CSV |
+| `GET` | `/api/hackathons/{id}/projects` | List projects |
+| `POST` | `/api/hackathons/{id}/scrape` | Scrape all pending repos |
+| `GET` | `/api/projects/{id}` | Get project details |
+| `GET` | `/api/projects/{id}/data` | Get scraped project data |
+| `GET` | `/api/hackathons/{id}/rubrics` | List evaluation rubrics |
+| `POST` | `/api/hackathons/{id}/rubrics` | Create a rubric |
+| `PUT` | `/api/rubrics/{id}` | Update a rubric |
+| `DELETE` | `/api/rubrics/{id}` | Delete a rubric |
+| `GET` | `/api/hackathons/{id}/hard-rules` | List hard rules |
+| `POST` | `/api/hackathons/{id}/hard-rules` | Create a hard rule |
+| `DELETE` | `/api/hard-rules/{id}` | Delete a hard rule |
+| `POST` | `/api/hackathons/{id}/evaluate` | Start evaluation run |
+| `GET` | `/api/evaluation-runs/{id}` | Get evaluation status |
+| `GET` | `/api/evaluation-runs/{id}/scores` | Get all scores |
+| `GET` | `/api/hackathons/{id}/leaderboard` | Get ranked leaderboard |
+| `GET` | `/api/hackathons/{id}/export` | Download Excel report |
 
-A sample CSV is included at `data/sample_projects.csv`.
+</details>
 
-## Evaluation Dimensions
+<details>
+<summary><strong>📁 Project Structure</strong></summary>
 
-| Dimension | Weight | What it evaluates |
-|-----------|--------|-------------------|
-| Technical Soundness | 30% | Code architecture, technology choices, engineering best practices |
-| Feature Alignment | 25% | How well the code delivers on the project's stated goals |
-| UI/UX Innovation | 20% | Design quality, usability, innovative interaction patterns |
-| Code Freshness | 25% | Whether the code was genuinely built during the hackathon |
+```
+Hackathon-Judge/
+├── hackathon_judge/              # Backend package
+│   ├── main.py                   # FastAPI app + startup
+│   ├── config/settings.py        # Pydantic Settings + AppConfig helpers
+│   ├── db/
+│   │   ├── engine.py             # Async SQLAlchemy engine
+│   │   └── models.py             # 8 ORM models
+│   ├── schemas/                  # Pydantic request/response models
+│   ├── api/                      # 5 route modules
+│   ├── services/
+│   │   ├── github_scraper.py     # GitHub API scraping
+│   │   ├── token_budget.py       # tiktoken-based budget control
+│   │   ├── evaluation_engine.py  # deepeval GEval orchestration
+│   │   ├── llm_provider.py       # LiteLLM model factory
+│   │   └── ingestion.py          # CSV parsing + import
+│   └── rubrics/defaults.py       # 4 default dimension definitions
+├── frontend/
+│   ├── app.py                    # Streamlit home page
+│   ├── api_client.py             # Backend API client
+│   └── pages/                    # 6 Streamlit pages
+├── data/sample_projects.csv
+├── start.sh                      # One-command launcher
+├── pyproject.toml
+└── .env.example
+```
 
-All dimensions are fully customizable — you can edit criteria, evaluation steps, weights, or add entirely new dimensions.
+</details>
 
-## Supported LLM Providers
+---
 
-| Provider | Model Format | Env Var |
-|----------|-------------|---------|
-| OpenAI | `gpt-4o`, `gpt-4o-mini` | `OPENAI_API_KEY` |
-| Anthropic | `anthropic/claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY` |
-| Google Gemini | `gemini/gemini-2.5-flash` | `GEMINI_API_KEY` |
-| DeepSeek | `deepseek/deepseek-chat` | `DEEPSEEK_API_KEY` |
+## 🤝 Contributing
 
-Any model supported by [LiteLLM](https://docs.litellm.ai/docs/providers) can be used.
+Contributions are welcome! Here's how:
 
-## API Endpoints
+```bash
+# 1. Fork and clone
+git clone https://github.com/<your-username>/Hackathon-Judge.git
+cd Hackathon-Judge
 
-The backend exposes 20 RESTful API endpoints. Full interactive docs at `http://127.0.0.1:8000/docs`.
+# 2. Install in dev mode
+pip install -e .
 
-| Category | Endpoints |
-|----------|-----------|
-| Hackathons | CRUD operations |
-| Projects | Import CSV, list, get details, scrape |
-| Rubrics | CRUD for dimensions and hard rules |
-| Evaluation | Start run, get status, get scores |
-| Leaderboard | Aggregated weighted scores |
-| Export | Excel download |
-| Config | Runtime settings CRUD |
+# 3. Create a branch
+git checkout -b feature/your-feature
 
-## License
+# 4. Make changes, then submit a PR
+```
 
-MIT
+**Ideas for contribution:**
+- Additional evaluation dimensions
+- New hard rule check types
+- Docker support
+- More LLM provider integrations
+- UI/UX improvements
+- Documentation and translations
+
+---
+
+## 📜 License
+
+[MIT](LICENSE) — use it however you want.
+
+---
+
+<p align="center">
+  <sub>Built with ❤️ for the hackathon community</sub>
+</p>

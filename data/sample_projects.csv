@@ -1,0 +1,4 @@
+title,description,github_url,demo_url,pitch_text
+AI Chat Assistant,An intelligent chatbot powered by LLMs with RAG capabilities,https://github.com/langchain-ai/langchain,,Build smarter conversations with retrieval-augmented generation
+Smart Task Manager,AI-powered task management app that auto-prioritizes and schedules,https://github.com/tiangolo/fastapi,,Never miss a deadline with AI-driven task prioritization
+Code Review Bot,Automated code review tool using LLMs to detect bugs and suggest improvements,https://github.com/streamlit/streamlit,,Ship better code faster with AI-powered reviews

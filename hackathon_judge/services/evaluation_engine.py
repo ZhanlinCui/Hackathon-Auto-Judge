@@ -1,0 +1,210 @@
+import asyncio
+import json
+import logging
+from datetime import datetime
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from hackathon_judge.config.settings import get_app_config, get_model_for_dimension
+from hackathon_judge.db.models import (
+    EvaluationRun,
+    HardRule,
+    HardRuleResult,
+    Project,
+    ProjectData,
+    ProjectScore,
+    Rubric,
+)
+from hackathon_judge.services.llm_provider import get_litellm_model
+
+logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 3
+
+
+def _build_evaluation_input(project: Project, project_data: ProjectData | None, rubric: Rubric) -> tuple[str, str]:
+    input_parts = []
+    if project.pitch_text:
+        input_parts.append(f"## Project Pitch\n{project.pitch_text}")
+    if project.description:
+        input_parts.append(f"## Project Description\n{project.description}")
+    if project_data and project_data.readme_content:
+        input_parts.append(f"## README\n{project_data.readme_content}")
+    input_text = "\n\n".join(input_parts) if input_parts else "No project description available."
+
+    output_parts = []
+    if project_data:
+        if project_data.file_tree:
+            tree = project_data.file_tree if isinstance(project_data.file_tree, str) else json.dumps(project_data.file_tree)
+            output_parts.append(f"## File Tree\n{tree}")
+        if project_data.config_files:
+            configs = project_data.config_files if isinstance(project_data.config_files, dict) else {}
+            for path, content in configs.items():
+                output_parts.append(f"## Config: {path}\n```\n{content}\n```")
+        if project_data.source_files:
+            sources = project_data.source_files if isinstance(project_data.source_files, dict) else {}
+            for path, content in sources.items():
+                output_parts.append(f"## Source: {path}\n```\n{content}\n```")
+        if project_data.commit_summary:
+            commits = project_data.commit_summary
+            if isinstance(commits, list):
+                commit_text = "\n".join(f"- {c.get('sha', '???')} {c.get('message', '')}" for c in commits)
+                output_parts.append(f"## Commit History\n{commit_text}")
+
+    actual_output = "\n\n".join(output_parts) if output_parts else "No code data available."
+
+    return input_text, actual_output
+
+
+async def _evaluate_single(
+    project: Project,
+    project_data: ProjectData | None,
+    rubric: Rubric,
+    model_name: str,
+) -> dict:
+    from deepeval.metrics import GEval
+    from deepeval.test_case import LLMTestCase, LLMTestCaseParams
+
+    input_text, actual_output = _build_evaluation_input(project, project_data, rubric)
+
+    model = get_litellm_model(model_name)
+
+    metric = GEval(
+        name=rubric.name,
+        criteria=rubric.criteria,
+        evaluation_steps=rubric.evaluation_steps,
+        evaluation_params=[LLMTestCaseParams.INPUT, LLMTestCaseParams.ACTUAL_OUTPUT],
+        model=model,
+        threshold=0.5,
+    )
+
+    test_case = LLMTestCase(input=input_text, actual_output=actual_output)
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            await metric.a_measure(test_case)
+            raw_score = metric.score if metric.score is not None else 0.0
+            normalized = raw_score / 5.0 if raw_score > 1 else raw_score
+            return {
+                "raw_score": raw_score,
+                "score": min(max(normalized, 0.0), 1.0),
+                "reasoning": metric.reason or "",
+                "status": "done",
+            }
+        except Exception as e:
+            logger.warning(f"Attempt {attempt + 1} failed for {project.title}/{rubric.dimension}: {e}")
+            if attempt < MAX_RETRIES - 1:
+                await asyncio.sleep(2 ** attempt)
+
+    return {"raw_score": 0.0, "score": 0.0, "reasoning": "Evaluation failed after retries", "status": "error"}
+
+
+def _check_hard_rule(project_data: ProjectData | None, rule: HardRule) -> tuple[bool, str]:
+    if not project_data:
+        return False, "No project data available"
+
+    if rule.check_type == "readme_contains":
+        readme = project_data.readme_content or ""
+        found = rule.check_value.lower() in readme.lower()
+        return found, f"README {'contains' if found else 'does not contain'} '{rule.check_value}'"
+
+    if rule.check_type == "file_exists":
+        tree = project_data.file_tree or ""
+        tree_str = tree if isinstance(tree, str) else json.dumps(tree)
+        found = rule.check_value in tree_str
+        return found, f"File '{rule.check_value}' {'found' if found else 'not found'} in tree"
+
+    if rule.check_type == "commit_count_min":
+        commits = project_data.commit_summary
+        if isinstance(commits, list):
+            count = len(commits)
+            threshold = int(rule.check_value)
+            passed = count >= threshold
+            return passed, f"Commit count: {count} (min: {threshold})"
+        return False, "No commit data"
+
+    return False, f"Unknown check type: {rule.check_type}"
+
+
+async def run_evaluation(
+    session: AsyncSession,
+    hackathon_id: int,
+    evaluation_run_id: int,
+):
+    run_result = await session.execute(
+        select(EvaluationRun).where(EvaluationRun.id == evaluation_run_id)
+    )
+    run = run_result.scalar_one()
+    run.status = "running"
+    run.started_at = datetime.utcnow()
+    await session.commit()
+
+    rubric_result = await session.execute(
+        select(Rubric).where(Rubric.hackathon_id == hackathon_id, Rubric.is_active == True)
+    )
+    rubrics = list(rubric_result.scalars().all())
+
+    project_result = await session.execute(
+        select(Project)
+        .where(Project.hackathon_id == hackathon_id)
+        .options(selectinload(Project.data))
+    )
+    projects = list(project_result.scalars().all())
+
+    rule_result = await session.execute(
+        select(HardRule).where(HardRule.hackathon_id == hackathon_id)
+    )
+    hard_rules = list(rule_result.scalars().all())
+
+    run.total_count = len(projects) * len(rubrics)
+    await session.commit()
+
+    concurrency = int(await get_app_config(session, "concurrency") or "3")
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def evaluate_project_dimension(project: Project, rubric: Rubric):
+        async with semaphore:
+            model_name = await get_model_for_dimension(session, rubric.dimension)
+
+            result = await _evaluate_single(project, project.data, rubric, model_name)
+
+            score = ProjectScore(
+                evaluation_run_id=evaluation_run_id,
+                project_id=project.id,
+                dimension=rubric.dimension,
+                score=result["score"],
+                raw_score=result["raw_score"],
+                reasoning=result["reasoning"],
+                model_used=model_name,
+                tokens_used=0,
+                status=result["status"],
+            )
+            session.add(score)
+            run.completed_count += 1
+            await session.commit()
+
+    for project in projects:
+        for rule in hard_rules:
+            passed, detail = _check_hard_rule(project.data, rule)
+            hr_result = HardRuleResult(
+                evaluation_run_id=evaluation_run_id,
+                project_id=project.id,
+                hard_rule_id=rule.id,
+                passed=passed,
+                detail=detail,
+            )
+            session.add(hr_result)
+        await session.commit()
+
+    tasks = []
+    for project in projects:
+        for rubric in rubrics:
+            tasks.append(evaluate_project_dimension(project, rubric))
+
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+    run.status = "completed"
+    run.finished_at = datetime.utcnow()
+    await session.commit()

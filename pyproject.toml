@@ -1,0 +1,30 @@
+[project]
+name = "hackathon-judge"
+version = "0.1.0"
+description = "AI-powered hackathon project evaluation platform"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.20",
+    "pydantic-settings>=2.0",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "PyGithub>=2.0",
+    "tiktoken>=0.7",
+    "deepeval>=2.0",
+    "litellm>=1.40",
+    "httpx>=0.27",
+    "streamlit>=1.35",
+    "python-multipart>=0.0.9",
+    "python-dotenv>=1.0",
+    "plotly>=5.18",
+]
+
+[tool.setuptools.packages.find]
+include = ["hackathon_judge*"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
